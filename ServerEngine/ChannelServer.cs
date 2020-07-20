@@ -5517,7 +5517,7 @@ namespace ServerEngine
                             if (commands.Length < 2 || commands.Length > 2)
                             {
                                 SendCommandHelp("Usage: .invite <player>", c);
-                                SendCommandHelp("Example: .invite PlayerOne", c);
+                                SendCommandHelp("Example: .invite Name", c);
                             }
                             else
                             {
@@ -5526,26 +5526,37 @@ namespace ServerEngine
                                     Client player = GetClientByName(commands[1]);
                                     if (player != null)
                                     {
-                                       // TODO: Check if in part and need to add member or need to create new party
-                                       // Also validate status of other person's party, etc.
-                                        /*
-                                        Example:
-                                        byte[] SendRemoveCharacter = PacketManager.SendRemoveCharacter(c.MyCharacter, RemoveCharacterEffect.Bead);
-                                        SendToClients(SendRemoveCharacter, Clients);
-
-                                        c.MyCharacter.Position.X = (short)tempPort.ToX;
-                                        c.MyCharacter.Position.Y = (short)tempPort.ToY;
-                                        c.MyCharacter.OldMapId = c.MyCharacter.MapId;
-                                        c.MyCharacter.MapId = tomap.MapID;
-                                        c.MyCharacter.Map = mapEngine.Map;
-                                        characterManager.UpdateCharacter(c.MyCharacter);
-
-                                        byte[] SendPortal = PacketManager.SendPortal(tempPort);
-                                        c.Send(SendPortal);
-                                        */
+                                        if (player.MyCharacter.Party == null) {
+                                            if (c.MyCharacter.Party == null) {
+                                              // Create a new party
+                                              PartyRequestInfo info = new PartyRequestInfo
+                                              {
+                                                  AskerID = c.MyCharacter.CharacterId,
+                                                  TargetID = player.MyCharacter.CharacterId,
+                                                  Error = PartyError.None,
+                                                  Type = PartyType.Normal,
+                                              };
+                                              byte[] SendPartyAnswer = PacketManager.SendPartyAnswer(info);
+                                              c.send(SendPartyAnswer);                                              
+                                            } else {
+                                              // Add to existing party                                              
+                                              AddToPartyRequestInfo info = new AddToPartyRequestInfo
+                                              {
+                                                  AskerID = c.MyCharacter.CharacterId,
+                                                  TargetID = player.MyCharacter.CharacterId,
+                                                  Error = PartyError.None,
+                                                  Type = PartyType.Normal,
+                                              };
+                                              byte[] SendAddToPartyAnswer = PacketManager.SendAddToPartyAnswer(info);
+                                              c.send(SendAddToPartyAnswer);
+                                            }
+                                        } else {
+                                            SendCommandHelp(string.Format("Player {0} is already in a party", commands[1]), c);
+                                        }
                                     }
-                                    else
-                                        SendCommandHelp(string.Format("Player {0} is not online", commands[1]), c);                                                                        
+                                    else {
+                                        SendCommandHelp(string.Format("Player {0} is not online", commands[1]), c);
+                                    }
                                 }
                                 catch
                                 {
